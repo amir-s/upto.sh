@@ -16,6 +16,7 @@ await serve({
     }
 
     const url = new URL(req.url);
+    url.protocol = "https";
     if (url.pathname === "/") {
       return new Response(
         `curl --upload-file /path/to/your/file.ext ${url.href}`,
