@@ -6,6 +6,7 @@ console.log("Server started!");
 
 await serve({
   development: !true,
+  maxRequestBodySize: 1024 * 1024 * 512, // 512MB
   port: process.env.PORT || 3000,
   async fetch(req) {
     if (req.method === "PUT") {
