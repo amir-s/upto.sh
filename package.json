@@ -9,7 +9,7 @@
   },
   "scripts": {
     "migrate": "bunx prisma migrate deploy",
-    "start": "bunx prisma generate && bunx prisma migrate deploy && bun run index.ts"
+    "start": "bunx prisma migrate deploy && bun run index.ts"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -20,5 +20,8 @@
     "@prisma/client": "^5.15.1",
     "parse-duration": "^1.1.0",
     "qrcode-terminal": "^0.12.0"
-  }
+  },
+  "trustedDependencies": [
+    "@prisma/client"
+  ]
 }
