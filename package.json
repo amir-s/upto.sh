@@ -9,7 +9,7 @@
   },
   "scripts": {
     "migrate": "bunx prisma migrate deploy",
-    "start": "bunx prisma migrate deploy && prisma generate && bun run index.ts"
+    "start": "bunx prisma generate && bunx prisma migrate deploy && bun run index.ts"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
