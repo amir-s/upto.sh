@@ -1,3 +1,5 @@
+import { Request, Response } from "hyper-express";
+
 import { db } from "../db";
 import { getFile } from "../storage";
 
@@ -11,8 +13,7 @@ function parseDownloadParams(url: URL) {
   return { hash, fileName };
 }
 
-export const download = async (req: Request) => {
-  const url = new URL(req.url);
+export const download = async (req: Request, res: Response, url: URL) => {
   const { fileName, hash } = parseDownloadParams(url);
 
   const file = await db.file.findUnique({
@@ -20,7 +21,7 @@ export const download = async (req: Request) => {
   });
 
   if (!file) {
-    return new Response("File not found", { status: 404 });
+    return res.status(404).send("File not found");
   }
 
   await db.file.update({
@@ -32,9 +33,9 @@ export const download = async (req: Request) => {
 
   const data = await getFile(`${hash}/${fileName}`);
 
-  return new Response(data, {
-    headers: {
-      "Content-Disposition": `attachment; filename="${fileName}"`,
-    },
-  });
+  res
+    .setHeader("Content-Type", "application/octet-stream")
+    .setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+  return data.pipe(res);
 };
