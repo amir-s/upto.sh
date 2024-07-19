@@ -3,7 +3,9 @@ import { upload } from "./src/routes/upload";
 import { download } from "./src/routes/download";
 import { Server } from "hyper-express";
 
-const server = new Server();
+const server = new Server({
+  max_body_length: 512 * 1024 * 1024, // 512MB
+});
 
 server.put("*", async (req, res) => {
   const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
