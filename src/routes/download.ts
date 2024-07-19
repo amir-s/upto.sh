@@ -37,5 +37,10 @@ export const download = async (req: Request, res: Response, url: URL) => {
     .setHeader("Content-Type", "application/octet-stream")
     .setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
-  return data.pipe(res);
+  try {
+    data.pipe(res);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Error while downloading the file");
+  }
 };
