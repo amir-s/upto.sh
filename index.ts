@@ -1,37 +1,33 @@
-import { serve } from "bun";
+import "dotenv/config";
 import { upload } from "./src/routes/upload";
 import { download } from "./src/routes/download";
+import { Server } from "hyper-express";
 
-console.log("Server started!");
+const server = new Server();
 
-await serve({
-  development: !true,
-  maxRequestBodySize: 1024 * 1024 * 512, // 512MB
-  port: process.env.PORT || 3000,
-  async fetch(req) {
-    if (req.method === "PUT") {
-      return upload(req);
-    }
-    if (req.method !== "GET") {
-      return new Response("Method not allowed", { status: 405 });
-    }
-
-    const url = new URL(req.url);
-    url.protocol = "https";
-    if (url.pathname === "/") {
-      return new Response(
-        `curl --upload-file /path/to/your/file.ext ${url.href}`,
-        {
-          headers: {
-            "Content-Type": "text/plain",
-          },
-        }
-      );
-    }
-    if (url.pathname === "/favicon.ico") {
-      return new Response(null, { status: 404 });
-    }
-
-    return download(req);
-  },
+server.put("*", async (req, res) => {
+  const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
+  return await upload(req, res, url);
 });
+
+server.get("/", async (req, res) => {
+  const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
+  url.protocol = "https";
+  return res.end(
+    `$ curl --upload-file /path/to/your/file.ext ${url.href}\n\n\n# report issues at https://github.com/amir-s/upto.sh`
+  );
+});
+
+server.get("/favicon.ico", async (req, res) => {
+  return res.status(404).end();
+});
+
+server.get("*", async (req, res) => {
+  const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
+  return await download(req, res, url);
+});
+
+server
+  .listen(process.env.PORT || "3000")
+  .then(() => console.log("server started"))
+  .catch((error) => console.log("Failed to start server", error));

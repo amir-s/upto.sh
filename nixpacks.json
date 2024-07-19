@@ -1,8 +1,0 @@
-{
-  "phases": {
-    "setup": {
-      "nixLibs": ["...", "openssl"],
-      "nixPkgs": ["...", "glibc"]
-    }
-  }
-}

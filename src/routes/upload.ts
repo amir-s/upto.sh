@@ -1,5 +1,7 @@
+import { Request, Response } from "hyper-express";
 import parse from "parse-duration";
 import { generateQRCode, randomString } from "../utils";
+import { PassThrough } from "stream";
 import { uploadFile } from "../storage";
 import { db } from "../db";
 
@@ -15,21 +17,22 @@ function parseUploadParams(url: URL) {
   return { fileName, duration, readableDuration };
 }
 
-export const upload = async (req: Request) => {
-  if (!req.body) {
-    return new Response("Missing body", { status: 400 });
-  }
+export const upload = async (req: Request, res: Response, url: URL) => {
+  const stream = new PassThrough();
+  req.pipe(stream);
 
-  const url = new URL(req.url);
+  if (!req.headers["content-length"]) {
+    return res.status(400).end("No file uploaded");
+  }
 
   const { fileName, duration, readableDuration } = parseUploadParams(url);
 
   if (duration <= MIN_DURATION || duration > MAX_DURATION) {
-    return new Response("Invalid duration", { status: 400 });
+    return res.status(400).end("Invalid duration");
   }
   const hash = randomString(6);
 
-  await uploadFile(`${hash}/${fileName}`, req.body);
+  await uploadFile(`${hash}/${fileName}`, stream);
 
   await db.file.create({
     data: {
@@ -51,9 +54,7 @@ export const upload = async (req: Request) => {
   });
 
   const qrcode = await generateQRCode(downloadURL.href);
-  return new Response(`${qrcode}\n\n${downloadURL.href}\n`, {
-    headers: {
-      "Content-Type": "text/plain",
-    },
-  });
+  return res
+    .setHeader("Content-Type", "text/plain")
+    .send(`${qrcode}\n\n${downloadURL.href}\n`);
 };

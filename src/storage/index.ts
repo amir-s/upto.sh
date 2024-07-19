@@ -4,6 +4,7 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
+import { Readable } from "stream";
 
 const s3 = new S3Client({
   endpoint: process.env.S3_ENDPOINT!,
@@ -14,10 +15,7 @@ const s3 = new S3Client({
   },
 });
 
-export const uploadFile = async (
-  key: string,
-  data: ReadableStream<Uint8Array>
-) => {
+export const uploadFile = async (key: string, data: Readable) => {
   const upload = new Upload({
     client: s3,
     params: {
@@ -39,7 +37,7 @@ export const getFile = async (key: string) => {
     Key: key,
   });
 
-  return (await s3.send(command)).Body as ReadableStream<Uint8Array>;
+  return (await s3.send(command)).Body as Readable;
 };
 
 export const deleteFile = async (key: string) => {
