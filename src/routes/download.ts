@@ -2,6 +2,7 @@ import { Request, Response } from "hyper-express";
 
 import { db } from "../db";
 import { getFile } from "../storage";
+import { pipeline } from "stream/promises";
 
 function parseDownloadParams(url: URL) {
   const params = url.pathname.split("/");
@@ -38,7 +39,7 @@ export const download = async (req: Request, res: Response, url: URL) => {
     .setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
   try {
-    data.pipe(res);
+    await pipeline(data, res);
   } catch (err) {
     console.log(err);
     res.status(500).send("Error while downloading the file");
