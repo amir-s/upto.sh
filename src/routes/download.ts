@@ -2,11 +2,10 @@ import { Request, Response } from "hyper-express";
 
 import { db } from "../db";
 import { getFile } from "../storage";
-import { pipeline } from "stream/promises";
 
 function parseDownloadParams(url: URL) {
   const params = url.pathname.split("/");
-  console.log(params);
+
   if (params.length !== 3) {
     throw new Error("Invalid URL");
   }
@@ -16,6 +15,8 @@ function parseDownloadParams(url: URL) {
 
 export const download = async (req: Request, res: Response, url: URL) => {
   const { fileName, hash } = parseDownloadParams(url);
+
+  console.log(`Downloading ${hash}/${fileName}`);
 
   const file = await db.file.findUnique({
     where: { id: `${hash}/${fileName}` },
@@ -32,16 +33,14 @@ export const download = async (req: Request, res: Response, url: URL) => {
     },
   });
 
-  const data = await getFile(`${hash}/${fileName}`);
+  const { stream, contentLength } = await getFile(`${hash}/${fileName}`);
 
   res
     .setHeader("Content-Type", "application/octet-stream")
     .setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
-  try {
-    await pipeline(data, res);
-  } catch (err) {
-    console.log(err);
-    res.status(500).send("Error while downloading the file");
-  }
+  await res.stream(stream, contentLength);
+
+  console.log(`Downloaded ${fileName}`);
+  return res.end();
 };

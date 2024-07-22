@@ -37,7 +37,12 @@ export const getFile = async (key: string) => {
     Key: key,
   });
 
-  return (await s3.send(command)).Body as Readable;
+  const data = await s3.send(command);
+  return {
+    stream: data.Body as Readable,
+    contentType: data.ContentType,
+    contentLength: data.ContentLength,
+  };
 };
 
 export const deleteFile = async (key: string) => {
