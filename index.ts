@@ -7,6 +7,12 @@ const server = new Server({
   max_body_length: 512 * 1024 * 1024, // 512MB
 });
 
+server.use(async (req, res, next) => {
+  console.log(` vvvv ${req.method} '${req.url}'`);
+  await next();
+  console.log(" ^^^^ ");
+});
+
 server.put("*", async (req, res) => {
   const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
   return await upload(req, res, url);
