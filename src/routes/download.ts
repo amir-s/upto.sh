@@ -41,6 +41,6 @@ export const download = async (req: Request, res: Response, url: URL) => {
 
   await res.stream(stream, contentLength);
 
-  console.log(`Downloaded ${fileName}`);
+  console.log(`Downloaded ${fileName}, ${contentLength} bytes`);
   return res.end();
 };
