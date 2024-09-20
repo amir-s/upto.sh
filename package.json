@@ -25,7 +25,7 @@
     "@aws-sdk/lib-storage": "^3.600.0",
     "@prisma/client": "^5.15.1",
     "dotenv": "^16.4.5",
-    "hyper-express": "^6.16.4",
+    "hyper-express": "^6.17.2",
     "parse-duration": "^1.1.0",
     "qrcode-terminal": "^0.12.0"
   }

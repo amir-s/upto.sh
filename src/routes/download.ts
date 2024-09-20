@@ -37,9 +37,10 @@ export const download = async (req: Request, res: Response, url: URL) => {
 
   res
     .setHeader("Content-Type", "application/octet-stream")
-    .setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    .setHeader("Content-Disposition", `attachment; filename="${fileName}"`)
+    .setHeader("Content-Length", contentLength?.toString() || "");
 
-  await res.stream(stream, contentLength);
+  await res.stream(stream);
 
   console.log(`Downloaded ${fileName}, ${contentLength} bytes`);
   return res.end();
