@@ -1,9 +1,12 @@
-import { Request, Response } from "hyper-express";
 import parse from "parse-duration";
-import { generateQRCode, randomString } from "../utils";
-import { PassThrough } from "stream";
-import { uploadFile } from "../storage";
-import { db } from "../db";
+import { Readable } from "node:stream";
+import { randomString, generateQRCode } from "../utils/index.ts";
+import { createFactory } from "hono/factory";
+import { HTTPException } from "hono/http-exception";
+import { uploadFile } from "../storage/index.ts";
+import { createFileEntry } from "../db/index.ts";
+
+const factory = createFactory();
 
 const MIN_DURATION = 10;
 const MAX_DURATION = parse("30d")!;
@@ -17,30 +20,28 @@ function parseUploadParams(url: URL) {
   return { fileName, duration, readableDuration };
 }
 
-export const upload = async (req: Request, res: Response, url: URL) => {
-  const stream = new PassThrough();
-  req.pipe(stream);
+export const uploadHandler = factory.createHandlers(async (c) => {
+  const url = new URL(`${c.req.url}`);
 
-  if (!req.headers["content-length"]) {
-    return res.status(400).end("No file uploaded");
+  if (!c.req.header("content-length") || !c.req.raw.body) {
+    throw new HTTPException(400, { message: "No file uploaded" });
   }
 
   const { fileName, duration, readableDuration } = parseUploadParams(url);
 
   if (duration <= MIN_DURATION || duration > MAX_DURATION) {
-    return res.status(400).end("Invalid duration");
+    throw new HTTPException(401, { message: "Invalid duration" });
   }
+
   const hash = randomString(6);
-
-  await uploadFile(`${hash}/${fileName}`, stream);
-
-  await db.file.create({
-    data: {
-      id: `${hash}/${fileName}`,
-      hash,
-      fileName,
-      expiresAt: new Date(Date.now() + duration),
-    },
+  console.log({ hash, fileName, duration, readableDuration });
+  await uploadFile(`${hash}/${fileName}`, Readable.from(c.req.raw.body));
+  console.log("upload done");
+  await createFileEntry({
+    id: `${hash}/${fileName}`,
+    hash,
+    fileName,
+    expiresAt: new Date(Date.now() + duration),
   });
 
   const downloadURL = new URL(url);
@@ -54,7 +55,6 @@ export const upload = async (req: Request, res: Response, url: URL) => {
   });
 
   const qrcode = await generateQRCode(downloadURL.href);
-  return res
-    .setHeader("Content-Type", "text/plain")
-    .send(`${qrcode}\n\n${downloadURL.href}\n`);
-};
+  c.header("Content-Type", "text/plain");
+  return c.text(`${qrcode}\n\n${downloadURL.href}\n`);
+});

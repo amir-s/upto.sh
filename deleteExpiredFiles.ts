@@ -1,23 +1,13 @@
-import { db } from "./src/db";
-import { deleteFile } from "./src/storage";
+import { deleteFileRow, getExpiredFiles } from "./src/db/index.ts";
+import { deleteFile } from "./src/storage/index.ts";
 
 const deleteExpiredFiles = async () => {
-  const files = await db.file.findMany({
-    where: {
-      expiresAt: {
-        lt: new Date(),
-      },
-    },
-  });
+  const files = getExpiredFiles();
 
   for (const file of files) {
-    console.log(`Deleting file ${file.id}`);
-    await deleteFile(file.id);
-    await db.file.delete({
-      where: {
-        id: file.id,
-      },
-    });
+    console.log(`Deleting file ${file[0]}`);
+    await deleteFile(file[0] as string);
+    await deleteFileRow(file[0] as string);
   }
 };
 

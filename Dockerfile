@@ -1,30 +1,13 @@
-# Build stage
-FROM node:20 AS build
+FROM denoland/deno:ubuntu-2.0.4
+RUN apt-get update && apt-get install -y curl
 
+EXPOSE 3000
 WORKDIR /app
 
-COPY package*.json .
-COPY prisma .
+COPY deno.* .
 
-RUN npm install
+RUN deno install
 
 COPY . .
 
-RUN npm run build
-
-# Production stage
-FROM node:20 AS production
-
-WORKDIR /app
-
-COPY package*.json .
-
-RUN npm ci --only=production
-
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
-
-RUN npm run prisma:generate
-
-EXPOSE 3000
-ENTRYPOINT [ "npm", "start" ]
+CMD [ "task", "start" ]

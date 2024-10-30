@@ -1,7 +1,11 @@
-import { Request, Response } from "hyper-express";
+import { HTTPException } from "hono/http-exception";
+import { createFactory } from "hono/factory";
+import { incrementDownloads } from "../db/index.ts";
+import { getFile } from "../storage/index.ts";
+import { findFileEntry } from "../db/index.ts";
+import { Readable } from "node:stream";
 
-import { db } from "../db";
-import { getFile } from "../storage";
+const factory = createFactory();
 
 function parseDownloadParams(url: URL) {
   const params = url.pathname.split("/");
@@ -13,35 +17,29 @@ function parseDownloadParams(url: URL) {
   return { hash, fileName };
 }
 
-export const download = async (req: Request, res: Response, url: URL) => {
+export const downloadHandler = factory.createHandlers(async (c) => {
+  const url = new URL(`${c.req.url}`);
   const { fileName, hash } = parseDownloadParams(url);
 
   console.log(`Downloading ${hash}/${fileName}`);
 
-  const file = await db.file.findUnique({
-    where: { id: `${hash}/${fileName}` },
-  });
+  const file = await findFileEntry(`${hash}/${fileName}`);
 
   if (!file) {
-    return res.status(404).send("File not found");
+    throw new HTTPException(404, { message: "File not found" });
   }
 
-  await db.file.update({
-    where: { id: `${hash}/${fileName}` },
-    data: {
-      downloads: file.downloads + 1,
-    },
-  });
+  await incrementDownloads(`${hash}/${fileName}`);
 
   const { stream, contentLength } = await getFile(`${hash}/${fileName}`);
 
-  res
-    .setHeader("Content-Type", "application/octet-stream")
-    .setHeader("Content-Disposition", `attachment; filename="${fileName}"`)
-    .setHeader("Content-Length", contentLength?.toString() || "");
-
-  await res.stream(stream);
+  c.res.headers.set("Content-Type", "application/octet-stream");
+  c.res.headers.set(
+    "Content-Disposition",
+    `attachment; filename="${fileName}"`
+  );
+  c.res.headers.set("Content-Length", contentLength?.toString() || "");
 
   console.log(`Downloaded ${fileName}, ${contentLength} bytes`);
-  return res.end();
-};
+  return c.body(Readable.toWeb(stream) as ReadableStream);
+});
