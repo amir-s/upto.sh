@@ -1,7 +1,7 @@
 import * as qrcode from "qrcode-terminal";
 
-export const generateQRCode = async (text: string) => {
-  return new Promise<string>((resolve, reject) => {
+export const generateQRCode = (text: string) => {
+  return new Promise<string>((resolve) => {
     qrcode.generate(text, { small: true }, (qrcode: string) => {
       resolve(qrcode);
     });

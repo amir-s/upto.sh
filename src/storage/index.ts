@@ -4,7 +4,8 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
+import process from "node:process";
 
 const s3 = new S3Client({
   endpoint: process.env.S3_ENDPOINT!,
@@ -28,7 +29,7 @@ export const uploadFile = async (key: string, data: Readable) => {
   upload.on("httpUploadProgress", (progress) => {
     console.log(`Uploaded ${progress.loaded} bytes`);
   });
-  return upload.done();
+  return await upload.done();
 };
 
 export const getFile = async (key: string) => {

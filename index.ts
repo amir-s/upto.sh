@@ -1,41 +1,53 @@
-import "dotenv/config";
-import { upload } from "./src/routes/upload";
-import { download } from "./src/routes/download";
-import { Server } from "hyper-express";
+import "dotenv/load";
+import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 
-const server = new Server({
-  max_body_length: 512 * 1024 * 1024, // 512MB
-});
+import { uploadHandler } from "./src/routes/upload.ts";
+import { prepareDB } from "./src/db/index.ts";
+import { downloadHandler } from "./src/routes/download.ts";
 
-server.use(async (req, res, next) => {
-  console.log(` vvvv ${req.method} '${req.url}'`);
-  await next();
-  console.log(" ^^^^ ");
-});
+const app = new Hono();
 
-server.put("*", async (req, res) => {
-  const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
-  return await upload(req, res, url);
-});
-
-server.get("/", async (req, res) => {
-  const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
-  url.protocol = "https";
-  return res.end(
+app.get("/", (c) => {
+  const url = new URL(`${c.req.url}`);
+  return c.text(
     `$ curl --upload-file /path/to/your/file.ext ${url.href}\n\n\n# report issues at https://github.com/amir-s/upto.sh`
   );
 });
 
-server.get("/favicon.ico", async (req, res) => {
-  return res.status(404).end();
+app.use(async (c, next) => {
+  console.log("started", c.req.url);
+  const resp = await next();
+  console.log("ended", c.req.url);
+  return resp;
 });
 
-server.get("*", async (req, res) => {
-  const url = new URL(`${req.protocol}://${req.headers.host}${req.url}`);
-  return await download(req, res, url);
+app.put(
+  "*",
+  bodyLimit({
+    maxSize: 512 * 1024 * 1024, // 512MB
+    onError: (c) => {
+      return c.text("shoot! file is too big! :(", 413);
+    },
+  }),
+  ...uploadHandler
+);
+
+app.get("/test", (c) => {
+  prepareDB();
+  return c.text("Hello, World!");
 });
 
-server
-  .listen(process.env.PORT || "3000")
-  .then(() => console.log("server started"))
-  .catch((error) => console.log("Failed to start server", error));
+app.get("/favicon.ico", (c) => {
+  c.status(404);
+  return c.text("Not Found");
+});
+
+app.get("*", ...downloadHandler);
+
+Deno.serve(
+  {
+    port: Number(Deno.env.get("PORT") || 3000),
+  },
+  app.fetch
+);

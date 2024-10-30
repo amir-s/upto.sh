@@ -1,6 +1,7 @@
-const fs = require("fs");
+import fs from "node:fs";
+import process from "node:process";
 
-const lazyParseLines = async function* (str) {
+const lazyParseLines = async function* (str: string) {
   let i = 0;
   let j = 0;
   while (j < str.length) {
@@ -64,11 +65,12 @@ if (process.argv[2] === "t") {
   }
 
   let s = "";
-  for (let i = 0; i < 20000000; i++) {
+  for (let i = 0; i < 20000001; i++) {
     if (i % 1000000 === 0) {
       console.error("test", { i });
+      fs.appendFileSync(process.argv[3], s);
+      s = "";
     }
     s += `test ${i + 1}\n`;
   }
-  fs.writeFileSync(process.argv[3], s);
 }

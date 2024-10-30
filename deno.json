@@ -1,0 +1,19 @@
+{
+  "tasks": {
+    "dev": "deno run -A --watch index.ts",
+    "start": "deno run --allow-read --allow-env --allow-sys --allow-write --allow-net index.ts"
+  },
+  "imports": {
+    "hono": "jsr:@hono/hono",
+    "qrcode-terminal": "npm:qrcode-terminal",
+    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3",
+    "@aws-sdk/lib-storage": "npm:@aws-sdk/lib-storage",
+    "dotenv": "jsr:@std/dotenv",
+    "parse-duration": "npm:parse-duration",
+    "sqlite": "https://deno.land/x/sqlite@v3.9.1/mod.ts"
+  },
+  "compilerOptions": {
+    "jsx": "precompile",
+    "jsxImportSource": "hono/jsx"
+  }
+}
