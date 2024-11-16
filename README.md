@@ -28,6 +28,14 @@ $ curl --upload-file ./hello.txt upto.sh
 http://upto.sh/2bTz7W/hello.txt
 ```
 
+Files can also be expired after a certain amount of time. The default is 10 minutes. For example, to expire a file after 10 days:
+
+```bash
+$ curl --upload-file ./hello.txt upto.sh/10d
+```
+
+The format for the expiration time is explained [here](https://www.npmjs.com/package/parse-duration).
+
 ## Installation
 
 You can build the image and run it locally.
